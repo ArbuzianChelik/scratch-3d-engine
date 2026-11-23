@@ -1,2 +1,2 @@
 # scratch-3d-engine
-My HTML Scratch-like game engine
+My vibecoded HTML Scratch-like game engine
