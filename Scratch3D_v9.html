@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Scratch3D V9</title>
+<style>
+:root{--bg:#171a24;--pn:#1f2330;--ln:#313750;--tx:#e8eaf2;color-scheme:dark}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;height:100vh;display:grid;grid-template:48px minmax(0,1fr)/250px minmax(0,1fr) 400px;background:var(--bg);color:var(--tx);font:13px/1.3 "Segoe UI",system-ui,sans-serif}
+header{grid-column:1/4;display:flex;gap:8px;align-items:center;padding:0 12px;background:var(--pn);border-bottom:1px solid var(--ln)}
+header b{font-size:15px;margin-right:10px}
+button{background:#2b3147;color:var(--tx);border:1px solid var(--ln);border-radius:6px;padding:6px 11px;cursor:pointer;font:inherit}
+button:hover{background:#38405e}button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7aa2ff}
+.go{background:#2c7a4d}.stop{background:#9b3b3b}
+#pal{overflow:auto;padding:8px 10px;background:#f7f8fc;color:#25283a;border-right:1px solid #d9dce8} #pal button{color:#25283a;background:#fff;border-color:#d9dce8} #pal button:hover{background:#e9edfa}
+#pal h4{margin:14px 0 5px;font-size:12px;color:#aab2cc}
+#pal input,#pal select{pointer-events:none}
+#mid{display:flex;min-height:0}
+#ws{flex:1;overflow:auto;padding:24px;position:relative;display:block;min-width:0;min-height:0;background-color:#fff;background-image:radial-gradient(#dfe2eb 1px,transparent 1px);background-size:20px 20px}
+#ws:empty::before{position:sticky;top:8px;left:8px;display:block;width:max-content;max-width:90%;padding:8px 12px;border-radius:8px;background:#202638;color:#9da8c7}
+.script{position:absolute;padding:8px 10px 10px;border:1px solid #d5d9e5;border-radius:10px;min-width:230px;max-width:max-content;background:#f7f8fc;box-shadow:0 4px 12px #27304a20}
+.script-grip{display:flex;align-items:center;gap:6px;margin:-3px 0 6px;padding:2px 4px;color:#747d99;font-size:10px;cursor:move;user-select:none}
+.script-grip::before{content:"⠿";font-size:16px;color:#7885a8}
+#ws .stack{min-width:190px}
+#ws .blk{position:relative}
+
+#ws:empty::before{content:"Перетащите блоки из палитры сюда. Начните с «когда 🏁 нажат».";color:#8b93ad}
+#txt{flex:1;background:#12141c;color:#d7dcf0;border:0;padding:16px;font:13px/1.5 Consolas,monospace;resize:none;tab-size:2}
+.script,.stack{min-height:26px}
+.script{padding:8px;border:1px dashed var(--ln);border-radius:8px;min-width:260px}
+.stack{margin:4px 0 2px 14px;padding:5px 6px;border-left:4px solid rgba(255,255,255,.35);min-height:12px}
+.blk{background:var(--c);color:#fff;border-radius:7px;padding:6px 9px;margin:2px 0;cursor:grab;width:fit-content;min-width:130px}
+.blk.H{border-radius:16px 16px 6px 6px;padding-top:8px}
+.hd{display:flex;flex-wrap:wrap;gap:5px;align-items:center}
+.blk input,.blk select{width:70px;border:0;border-radius:10px;padding:2px 7px;background:#fff;color:#222;font:inherit}
+.blk select{width:auto}
+#st{display:grid;grid-template-rows:minmax(220px,1fr) 190px 76px;border-left:1px solid var(--ln);background:#171a24;min-height:0}
+#sprite-pane{overflow:auto;background:#f7f8fc;color:#293047;border-top:1px solid #cbd1df;padding:7px 9px}
+#sprite-pane-title{font-weight:700;font-size:12px;margin:0 0 7px;color:#293047}
+#sprite-pane #tools{padding:0 0 7px;background:transparent;border:0}
+#sprite-pane #project-data{padding:0;border:0}
+#sprite-pane #project-data .panel-title{display:none}
+#sprite-pane #project-data .data-list{display:flex;flex-wrap:wrap;gap:5px;max-height:95px;overflow:auto}
+#sprite-pane #project-data .sprite-item{background:#e8ebf5;border:1px solid #d5d9e5;border-radius:7px;min-width:82px;cursor:pointer;padding:6px 8px}
+#sprite-pane #project-data .sprite-item.active{background:#dce5ff;border:2px solid #6387dc}
+#sprite-pane #project-data .data-row{margin-top:6px}
+#sprite-pane #project-data .data-list:not(:first-of-type){display:block}
+#sprite-pane #project-data .data-list .data-item:not(.sprite-item){background:#fff;border-radius:4px}
+#sprite-pane #project-data .data-list .data-item input{pointer-events:auto}
+#sprite-pane #project-data .panel-title{display:block;font-size:11px;margin:7px 0 3px;color:#65708c}
+#cv{width:100%;height:100%;display:block;min-height:0}
+#log{margin:0;padding:8px 10px;overflow:auto;background:#12141c;border-top:1px solid var(--ln);color:#aab2cc;font:12px Consolas,monospace}
+body.play{display:block}.play header,.play #pal,.play #mid,.play #log{display:none}
+.play #st{position:fixed;inset:0;display:block}.play #stage{position:absolute;inset:0;height:100vh;width:100vw}
+
+#codebox{position:relative;flex:1;min-width:0;overflow:hidden;background:#12141c}
+#codebox pre,#txt{position:absolute;inset:0;margin:0;width:100%;height:100%;padding:16px;border:0;white-space:pre-wrap;overflow:auto;font:13px/1.5 Consolas,monospace;tab-size:2}
+#codebox pre{pointer-events:none;color:#d7dcf0;z-index:1;overflow:hidden}
+#txt{z-index:2;background:transparent;color:transparent;caret-color:#fff;resize:none;outline:none;-webkit-text-fill-color:transparent}
+#txt::selection{background:#52658b88}
+#highlight .kw{color:#82aaff;font-weight:700}#highlight .str{color:#c3e88d}#highlight .num{color:#f78c6c}#highlight .com{color:#697386;font-style:italic}#highlight .opword{color:#ffcb6b}
+#hints{position:absolute;z-index:20;left:16px;top:50%;max-height:180px;overflow:auto;background:#252b3d;border:1px solid #536080;border-radius:7px;box-shadow:0 8px 24px #0008;padding:4px;min-width:180px}
+#hints button{display:block;width:100%;text-align:left;border:0;border-radius:4px;padding:5px}
+#stage{position:relative;min-height:0;overflow:hidden}
+#stage #cv,#pen{position:absolute;inset:0;width:100%;height:100%}
+#pen{pointer-events:none}
+.blk{user-select:none;box-shadow:0 2px 0 #0003}.blk:hover{filter:brightness(1.12)}
+#pal .blk{cursor:grab;max-width:100%;font-size:12px}
+#context{position:fixed;z-index:1000;background:#252b3d;border:1px solid #536080;border-radius:8px;padding:5px;box-shadow:0 8px 24px #0009;min-width:170px}
+#context button{display:block;width:100%;text-align:left;border:0;background:transparent}
+#context button:hover{background:#3a4562}
+#tools{display:flex;gap:5px;padding:6px 8px;border-bottom:1px solid var(--ln);flex-wrap:wrap}
+#tools button{font-size:11px;padding:4px 7px}
+#catnav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:7px 0;border-bottom:1px solid #d9dce8;margin-bottom:7px}
+#catnav button{font-size:11px;text-align:left;padding:6px 7px;border-color:transparent;background:transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#catnav button.active{background:#e6eaff;border-color:#8b9bd0;font-weight:700}
+#catblocks{display:flex;flex-direction:column;gap:5px} #catblocks .blk{box-shadow:0 2px 0 #0002}
+#pal h4{display:none}
+.script-grip:active{cursor:grabbing}
+.socket{display:inline-flex;vertical-align:middle;align-items:center;min-width:68px;min-height:27px;padding:2px 5px;margin:0 3px;border-radius:16px;background:#fff;color:#30364b;border:2px solid #d8dce8;gap:3px}
+.socket.empty{border-style:dashed;background:#f7f8fc;color:#8b91a4}.socket.over{outline:3px solid #ffe17b}.socket .blk{margin:0;min-width:0;padding:3px 7px}.else-label{font-size:11px;opacity:.8;padding:2px 8px}
+#tools{background:#f7f8fc} #varpanel{color:#333}
+#project-data{padding:7px 8px;border-bottom:1px solid #d9dce8;color:#293047}
+#project-data .panel-title{font-weight:700;margin:5px 0}
+#project-data .data-row{display:flex;align-items:center;gap:4px;margin:4px 0}
+#project-data input{min-width:0;width:78px;padding:3px 5px;border:1px solid #cbd1df;border-radius:5px;background:white;color:#222}
+#project-data button{font-size:11px;padding:3px 6px}
+#project-data .data-list{max-height:115px;overflow:auto}
+#project-data .data-item{display:flex;gap:5px;align-items:center;padding:3px 4px;border-radius:4px;font-size:11px}
+#project-data .data-item:hover{background:#e8ebf5}
+#project-data .data-item input{width:15px}
+#project-data .sprite-item.active{background:#dce5ff;font-weight:700}
+
+
+.script{border:1px solid #d5d9e5;background:#f7f8fc;box-shadow:0 4px 12px #27304a20}.script-grip{color:#747d99}.socket{min-width:82px}.blk.R{border-radius:18px;padding:5px 10px;min-width:72px}.blk.R .socket{border-radius:18px}.blk.C{border-radius:7px}
+@media(max-width:900px){body{grid-template-columns:190px minmax(0,1fr) 300px}#st{grid-template-rows:minmax(180px,1fr) 190px 70px}}
+.blk input.over,.blk select.over{outline:3px solid #ffe17b}
+</style></head><body>
+<header><b>Scratch3D V9</b>
+<button class="go" id="run">▶ Старт</button><button class="stop" id="stp">■ Стоп</button>
+<button id="mode" title="Переключить блоки и текст">⇄ Текст</button><button id="addscript" title="Новый скрипт">＋ Скрипт</button><span style="flex:1"></span>
+<button id="ex">💾 Экспорт проекта</button><button id="im">📂 Импорт</button><button id="exh" title="Один HTML-файл с готовой игрой">📦 Экспорт игры (.html)</button>
+<input id="fi" type="file" accept=".json,.html,.htm" hidden></header>
+<aside id="pal"></aside>
+<main id="mid"><div id="ws"></div><div id="codebox" hidden><pre id="highlight" aria-hidden="true"></pre><textarea id="txt" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea><div id="hints" hidden></div></div></main>
+<section id="st"><div id="stage"><canvas id="cv"></canvas><canvas id="pen"></canvas></div><div id="sprite-pane"><div id="sprite-pane-title">Спрайты и сцена</div></div><pre id="log"></pre></section>
+<script id="proj" type="application/json"></script>
+<script>
+const $=id=>document.getElementById(id);
+/* ───────── Реестр блоков: новый блок = одна строка def(...) ───────── */
+const CAT={ev:['События','#d9a21b'],ct:['Управление','#e08a2c'],mo:['Движение','#4c7bd9'],lk:['Внешность','#9a5fd1'],
+ sc:['3D-сцена','#2fa37a'],va:['Переменные','#e0562c'],sn:['Звук','#c64f9a'],
+ op:['Операторы','#59b85a'],se:['Сенсоры','#4aa6a6'],pe:['Перо','#0f9d8a'],mb:['Мои блоки','#8b6fc0']};
+const B={};
+// def(имя, категория, шаблон с {0}{1}.., значения по умолчанию, функция, опции)
+// опции: H — шапка скрипта, C — блок-контейнер, r — индексы аргументов без вычисления, s — выпадающие списки
+const def=(op,c,t,a,f,o={})=>B[op]={op,c,t,a:a.map(String),f,...(o.R&&!o.v?{v:a.map((_,i)=>i)}:{}),...o};
+const blk=(op,a=B[op].a,sub)=>({op,a:a.map(String),...(B[op].C?{sub:sub||[]}:{}) ,...(B[op].C&&op==='if_else'?{elseSub:[]}:{}) ,inputs:{}});
+const th=[];let on=false,t0=0,O,V,Ls,cam,li,bg;
+let pen,penCtx,penState={down:false,obj:'cube',color:'#ffffff',size:3,alpha:1},penLast={};
+const K={},log=m=>{$('log').textContent+=m+'\n';$('log').scrollTop=1e9};
+const hex=s=>{const m=/^#?([0-9a-f]{6})$/i.exec(String(s).trim());if(!m)throw Error('Цвет должен быть вида #rrggbb: '+s);const n=parseInt(m[1],16);return[n>>16,n>>8&255,n&255].map(x=>x/255)};
+const ob=n=>O[n]||(()=>{throw Error('Нет объекта «'+n+'»')})();
+const SHAPES=['cube','sphere','plane','capsule'];
+let ac;
+
+def('when_flag','ev','когда 🏁 нажат',[],0,{H:1});
+def('when_key','ev','когда нажата клавиша {0}',['space'],0,{H:1,r:[0]});
+def('when_msg','ev','когда получено {0}',['msg'],0,{H:1,r:[0]});
+def('broadcast','ev','передать {0}',['msg'],a=>hats(b=>b.op=='when_msg'&&b.a[0]==a[0]),{r:[0]});
+
+def('wait','ct','ждать {0} сек',[1],function*(a){const e=performance.now()+a[0]*1000;while(performance.now()<e)yield});
+def('repeat','ct','повторить {0} раз',[10],function*(a,b){for(let i=0;i<a[0];i++){yield*exec(b.sub);yield}},{C:1,v:[0]});
+def('forever','ct','повторять всегда',[],function*(a,b){for(;;){yield*exec(b.sub);yield}},{C:1});
+def('if','ct','если {0}',['true'],function*(a,b){if(a[0])yield*exec(b.sub)},{C:1,v:[0]});
+def('stop_all','ct','остановить всё',[],()=>{throw'stop'});
+
+def('go','mo','переместить {0} в x {1} y {2} z {3}',['cube',0,0,0],a=>ob(a[0]).p=[+a[1],+a[2],+a[3]],{r:[0]});
+def('move','mo','сдвинуть {0} на x {1} y {2} z {3}',['cube',0,0,0],a=>ob(a[0]).p=ob(a[0]).p.map((v,i)=>v+ +a[i+1]),{r:[0]});
+def('rotate','mo','повернуть {0} на x {1}° y {2}° z {3}°',['cube',0,1,0],a=>ob(a[0]).r=ob(a[0]).r.map((v,i)=>v+ +a[i+1]),{r:[0]});
+def('scale','mo','размер {0} x {1} y {2} z {3}',['cube',1,1,1],a=>ob(a[0]).k=[+a[1],+a[2],+a[3]],{r:[0]});
+
+def('color','lk','цвет {0} = {1}',['cube','#ff6a3d'],a=>ob(a[0]).c=hex(a[1]),{r:[0]});
+def('say','lk','сказать {0}',['Привет!'],a=>log(a[0]));
+
+def('add','sc','создать {0} формы {1}',['cube','cube'],a=>{if(!SHAPES.includes(a[1]))throw Error('Неизвестная форма '+a[1]);O[a[0]]={s:a[1],p:[0,0,0],r:[0,0,0],k:[1,1,1],c:[1,1,1],visible:true}},{r:[0,1],s:{1:SHAPES}});
+def('remove','sc','удалить {0}',['cube'],a=>delete O[a[0]],{r:[0]});
+def('camera_mode','sc','камера: {0}',['persp'],a=>cam.m=a[0],{r:[0],s:{0:['persp','ortho']}});
+def('camera_pos','sc','камера в x {0} y {1} z {2}',[0,3,8],a=>cam.p=a.map(Number));
+def('light','sc','свет направлен x {0} y {1} z {2}',[-.4,-1,-.6],a=>li=a.map(Number));
+def('bg','sc','фон {0}',['#14161e'],a=>bg=hex(a[0]));
+
+def('set','va','задать {0} = {1}',['score',0],a=>V[a[0]]=a[1],{r:[0],v:[1]});
+def('change','va','изменить {0} на {1}',['score',1],a=>V[a[0]]=(+V[a[0]]||0)+ +a[1],{r:[0],v:[1]});
+def('get_var','va','{0}',['X'],a=>V[a[0]]??0,{R:1});
+def('list_add','va','в список {0} добавить {1}',['items','вещь'],a=>(Ls[a[0]]??=[]).push(a[1]),{r:[0]});
+def('list_clear','va','очистить список {0}',['items'],a=>Ls[a[0]]=[],{r:[0]});
+
+def('beep','sn','сигнал {0} Гц, {1} мс',[440,200],a=>{ac??=new AudioContext();const o=ac.createOscillator();o.frequency.value=+a[0];o.connect(ac.destination);o.start();o.stop(ac.currentTime+a[1]/1000)});
+// Ванильные блоки Scratch: внешний вид, события, управление, сенсоры, операторы, списки и перо.
+// Блоки, требующие спрайтовой системы, адаптированы к объектам 3D-сцены.
+def('say_for','lk','говорить {0} {1} сек',['Привет!',2],function*(a){log('💬 '+a[0]);yield*waitSec(a[1])});
+def('think','lk','думать {0}',['Хмм...'],a=>log('💭 '+a[0]));
+def('show','lk','показать объект {0}',['cube'],a=>{ob(a[0]).visible=true},{r:[0]});
+def('hide','lk','скрыть объект {0}',['cube'],a=>{ob(a[0]).visible=false},{r:[0]});
+def('size_change','lk','изменить размер {0} на {1}',['cube',10],a=>{const o=ob(a[0]);o.k=o.k.map(v=>v*(1+Number(a[1])/100))},{r:[0]});
+def('size_set','lk','установить размер {0} {1}%',['cube',100],a=>ob(a[0]).k=[1,1,1].map(()=>Number(a[1])/100),{r:[0]});
+def('costume','lk','переключить форму {0}',['cube'],a=>{const o=ob(a[0]);o.s=SHAPES[(SHAPES.indexOf(o.s)+1)%SHAPES.length]},{r:[0]});
+def('backdrop','lk','установить фон {0}',['#14161e'],a=>bg=hex(a[0]));
+def('clear_effects','lk','убрать графические эффекты',[],()=>{});
+def('change_x','mo','изменить x объекта {0} на {1}',['cube',10],a=>ob(a[0]).p[0]+=Number(a[1]),{r:[0],v:[1]});
+def('change_y','mo','изменить y объекта {0} на {1}',['cube',10],a=>ob(a[0]).p[1]+=Number(a[1]),{r:[0],v:[1]});
+def('change_z','mo','изменить z объекта {0} на {1}',['cube',10],a=>ob(a[0]).p[2]+=Number(a[1]),{r:[0],v:[1]});
+def('point_dir','mo','повернуть объект {0} в направление {1}°',['cube',90],a=>ob(a[0]).r[1]=Number(a[1]),{r:[0]});
+def('glide','mo','плыть {0} сек к x {1} y {2} z {3}',['1',0,0,0],function*(a){const o=ob('cube'),from=o.p.slice(),to=a.slice(1).map(Number),n=Math.max(1,Math.ceil(Number(a[0])*30));for(let i=1;i<=n;i++){o.p=from.map((v,j)=>v+(to[j]-v)*i/n);yield}});
+def('turn_right','mo','повернуть {0} вправо на {1}°',['cube',15],a=>ob(a[0]).r[1]+=Number(a[1]),{r:[0]});
+def('turn_left','mo','повернуть {0} влево на {1}°',['cube',15],a=>ob(a[0]).r[1]-=Number(a[1]),{r:[0]});
+def('set_x','mo','установить x объекта {0} в {1}',['cube',0],a=>ob(a[0]).p[0]=Number(a[1]),{r:[0],v:[1]});
+def('set_y','mo','установить y объекта {0} в {1}',['cube',0],a=>ob(a[0]).p[1]=Number(a[1]),{r:[0],v:[1]});
+def('set_z','mo','установить z объекта {0} в {1}',['cube',0],a=>ob(a[0]).p[2]=Number(a[1]),{r:[0],v:[1]});
+const cond=(b,i=0)=>b.inputs&&b.inputs[i]?valueOf(b.inputs[i]):ev(b.a[i]);
+def('repeat_until','ct','повторять пока не {0}',['false'],function*(a,b){while(!cond(b)){yield*exec(b.sub);yield}},{C:1});
+def('if_else','ct','если {0} то иначе',['true'],function*(a,b){yield*exec(a[0]?b.sub:b.elseSub||[])},{C:1,v:[0]});
+def('wait_until','ct','ждать до {0}',['true'],function*(a,b){while(!cond(b))yield});
+def('for_each','ct','для каждого {0} из списка {1}',['item','items'],function*(a,b){for(const v of (Ls[a[1]]||[])){V[a[0]]=v;yield*exec(b.sub);yield}},{C:1,r:[0,1]});
+def('clone','ct','создать копию объекта {0}',['cube'],a=>{const o=ob(a[0]);let n=a[0]+'_copy';let i=1;while(O[n])n=a[0]+'_copy'+i++;O[n]=JSON.parse(JSON.stringify(o))},{r:[0]});
+def('delete_clones','ct','удалить копии',[],()=>Object.keys(O).filter(k=>/_copy\d*$/.test(k)).forEach(k=>delete O[k]));
+def('stop_script','ct','остановить этот скрипт',[],()=>{throw 'stop'});
+def('when_clone','ev','когда я начинаю как клон',[],0,{H:1});
+def('when_backdrop','ev','когда фон меняется',[],0,{H:1});
+def('when_loud','ev','когда громкость > {0}',[10],0,{H:1});
+def('key_pressed','se','клавиша {0} нажата?',['space'],a=>!!K[a[0]],{r:[0],R:1});
+def('mouse_x','se','мышь x',[],()=>V.mouseX||0,{R:1});
+def('mouse_y','se','мышь y',[],()=>V.mouseY||0,{R:1});
+def('mouse_down','se','кнопка мыши нажата?',[],()=>!!K.mouse,{R:1});
+def('timer','se','таймер',[],()=>((performance.now()-t0)/1000),{R:1});
+def('reset_timer','se','сбросить таймер',[],()=>t0=performance.now());
+def('object_exists','se','объект {0} существует?',['cube'],a=>!!O[a[0]],{r:[0],R:1});
+def('distance','se','расстояние до объекта {0}',['cube'],a=>Math.hypot(...ob(a[0]).p),{r:[0],R:1});
+def('answer','se','ответ',[],()=>V.answer||'',{R:1});
+def('ask','se','спросить {0} и ждать',['Как тебя зовут?'],a=>{V.answer=prompt(a[0])||''});
+def('add_list','va','в список {0} добавить {1}',['items','вещь'],a=>(Ls[a[0]]??=[]).push(a[1]),{r:[0]});
+def('list_delete','va','удалить элемент {0} из списка {1}',['1','items'],a=>{const l=Ls[a[1]]||[];if(a[0]=='последний')l.pop();else l.splice(Math.max(0,Number(a[0])-1),1)},{r:[1]});
+def('list_insert','va','вставить {0} в {1} списка {2}',['вещь','1','items'],a=>{const l=Ls[a[2]]??=[];l.splice(Math.max(0,Number(a[1])-1),0,a[0])},{r:[2]});
+def('list_replace','va','заменить элемент {0} списка {1} на {2}',['1','items','вещь'],a=>{const l=Ls[a[1]]??=[];if(l.length)l[Math.max(0,Number(a[0])-1)]=a[2]},{r:[1]});
+def('list_length','va','длина списка {0}',['items'],a=>(Ls[a[0]]||[]).length,{r:[0],R:1});
+def('list_contains','va','список {0} содержит {1}?',['items','вещь'],a=>(Ls[a[0]]||[]).includes(a[1]),{r:[0],R:1});
+def('list_item','va','элемент {0} списка {1}',['1','items'],a=>(Ls[a[1]]||[])[Math.max(0,Number(a[0])-1)]??'',{r:[1],R:1});
+def('list_show','va','показать список {0}',['items'],a=>log('📋 '+a[0]+': '+JSON.stringify(Ls[a[0]]||[])),{r:[0]});
+def('list_hide','va','скрыть список {0}',['items'],()=>{},{r:[0]});
+def('add_op','op','{0} + {1}',[1,1],a=>Number(a[0])+Number(a[1]),{R:1});
+def('sub_op','op','{0} − {1}',[1,1],a=>Number(a[0])-Number(a[1]),{R:1});
+def('mul_op','op','{0} × {1}',[2,2],a=>Number(a[0])*Number(a[1]),{R:1});
+def('div_op','op','{0} ÷ {1}',[4,2],a=>Number(a[1])?Number(a[0])/Number(a[1]):0,{R:1});
+def('random','op','случайное от {0} до {1}',[1,10],a=>Math.floor(Number(a[0])+Math.random()*(Number(a[1])-Number(a[0])+1)),{R:1});
+def('gt','op','{0} > {1}',[50,10],a=>Number(a[0])>Number(a[1]),{R:1});
+def('lt','op','{0} < {1}',[50,10],a=>Number(a[0])<Number(a[1]),{R:1});
+def('eq','op','{0} = {1}',[50,50],a=>String(a[0])==String(a[1]),{R:1});
+def('and','op','{0} и {1}',[true,true],a=>!!a[0]&&!!a[1],{R:1});
+def('or','op','{0} или {1}',[true,false],a=>!!a[0]||!!a[1],{R:1});
+def('not','op','не {0}',[false],a=>!a[0],{R:1});
+def('join','op','объединить {0} и {1}',['привет','мир'],a=>String(a[0])+String(a[1]),{R:1});
+def('letter','op','буква {0} в {1}',[1,'привет'],a=>String(a[1])[Number(a[0])-1]||'',{R:1});
+def('length','op','длина {0}',['привет'],a=>String(a[0]).length,{R:1});
+def('contains','op','{0} содержит {1}?',['привет','и'],a=>String(a[0]).includes(String(a[1])),{R:1});
+def('mod','op','{0} mod {1}',[10,3],a=>Number(a[0])%Number(a[1]),{R:1});
+def('round','op','округлить {0}',[3.7],a=>Math.round(Number(a[0])),{R:1});
+def('abs','op','abs {0}',[-10],a=>Math.abs(Number(a[0])),{R:1});
+def('floor','op','floor {0}',[3.7],a=>Math.floor(Number(a[0])),{R:1});
+def('ceil','op','ceil {0}',[3.2],a=>Math.ceil(Number(a[0])),{R:1});
+def('sqrt','op','sqrt {0}',[9],a=>Math.sqrt(Number(a[0])),{R:1});
+def('sin','op','sin {0}',[90],a=>Math.sin(Number(a[0])*Math.PI/180),{R:1});
+def('cos','op','cos {0}',[0],a=>Math.cos(Number(a[0])*Math.PI/180),{R:1});
+def('tan','op','tan {0}',[45],a=>Math.tan(Number(a[0])*Math.PI/180),{R:1});
+def('pen_clear','pe','стереть всё',[],()=>{penCtx.clearRect(0,0,pen.width,pen.height)});
+def('pen_down','pe','опустить перо {0}',['cube'],a=>{penState.down=true;penState.obj=a[0]},{r:[0]});
+def('pen_up','pe','поднять перо',[],()=>penState.down=false);
+def('pen_color','pe','установить цвет пера {0}',['#ffffff'],a=>penState.color=a[0]);
+def('pen_size','pe','установить размер пера {0}',[3],a=>penState.size=Math.max(1,Number(a[0])));
+def('pen_change_size','pe','изменить размер пера на {0}',[1],a=>penState.size=Math.max(1,penState.size+Number(a[0])));
+def('pen_stamp','pe','поставить штамп объекта {0}',['cube'],a=>penStamp(a[0]),{r:[0]});
+def('pen_change_color','pe','изменить цвет пера на {0}',['#22cc88'],a=>penState.color=a[0]);
+def('pen_set_shade','pe','установить оттенок пера {0}',[50],a=>penState.color=`hsl(${Number(a[0])*3.6},100%,50%)`);
+def('pen_change_shade','pe','изменить оттенок пера на {0}',[10],a=>penState.color=`hsl(${(Number(penState.shade||50)+Number(a[0]))*3.6},100%,50%)`);
+def('sound_play','sn','воспроизвести звук {0}',['beep'],a=>{ac??=new AudioContext();const o=ac.createOscillator();o.frequency.value=440;o.connect(ac.destination);o.start();o.stop(ac.currentTime+.2)});
+def('sound_stop','sn','остановить все звуки',[],()=>{if(ac){ac.close();ac=null}});
+def('volume_set','sn','установить громкость {0}%',[100],a=>V.volume=Math.max(0,Math.min(100,Number(a[0]))));
+def('volume_change','sn','изменить громкость на {0}',[-10],a=>V.volume=Math.max(0,Math.min(100,(V.volume??100)+Number(a[0]))));
+def('volume','sn','громкость',[],()=>V.volume??100,{R:1});
+def('broadcast_wait','ev','передать {0} и ждать',['msg'],function*(a){hats(b=>b.op=='when_msg'&&b.a[0]==a[0]);while(th.length)yield},{r:[0]});
+def('stop_other','ct','остановить другие скрипты',[],()=>{const current=th[0];th.splice(0,th.length,...(current?[current]:[]))});
+def('mouse_pointer','se','указатель мыши',[],()=>[V.mouseX||0,V.mouseY||0]);
+def('loudness','se','громкость звука',[],()=>0);
+def('current_date','se','текущая дата {0}',['год'],a=>{const d=new Date();return ({год:d.getFullYear(),месяц:d.getMonth()+1,дата:d.getDate(),день_недели:d.getDay()})[a[0]]??d.getFullYear()},{r:[0]});
+def('username','se','имя пользователя',[],()=>'Scratch3D');
+def('modulo','op','{0} mod {1}',[10,3],a=>Number(a[1])?Number(a[0])%Number(a[1]):0,{R:1});
+def('random_float','op','случайное число от {0} до {1}',[0,1],a=>Number(a[0])+Math.random()*(Number(a[1])-Number(a[0])),{R:1});
+def('join_words','op','объединить {0} и {1}',['яблоко','банан'],a=>String(a[0])+String(a[1]),{R:1});
+def('pen_set_alpha','pe','установить прозрачность пера {0}%',[100],a=>penState.alpha=Math.max(0,Math.min(100,Number(a[0]))/100));
+
+
+/* ───────── Интерпретатор ───────── */
+function* waitSec(v){const end=performance.now()+Math.max(0,Number(v))*1000;while(performance.now()<end)yield}
+
+// Значение поля: число → число; иначе выражение JS (переменные, key('left'), rnd(1,5), T, L.список); при ошибке — строка
+function ev(x){if(typeof x!='string')return x;const s=x.trim();if(s!==''&&!isNaN(s))return+s;
+ try{return new Function('V','L','key','rnd','T','with(V){return('+s+')}')(V,Ls,k=>!!K[k],(a,b)=>a+Math.random()*(b-a),(performance.now()-t0)/1000)}catch(e){return x}}
+function valueOf(b){const d=B[b.op];if(!d||!d.f)return false;const args=b.a.map((x,i)=>b.inputs&&b.inputs[i]?valueOf(b.inputs[i]):(d.r&&d.r.includes(i)?x:ev(x)));return d.f(args,b)}
+function* exec(bl){for(const b of bl){const d=B[b.op];if(!d||!d.f)continue;const result=valueOf(b);if(result&&typeof result.next==='function')yield*result;}}
+function allTargets(){return [{name:'stage',scripts:P.scripts||[],positions:P.positions||[]},...(P.sprites||[]).map(sp=>({name:sp.name,scripts:sp.scripts||[],positions:sp.positions||[]}))]}
+const hats=f=>allTargets().forEach(t=>t.scripts.filter(s=>s[0]&&B[s[0].op]?.H&&f(s[0])).forEach(s=>th.push({g:exec(s)})));
+function tick(){for(const t of th.slice()){try{if(t.g.next().done)th.splice(th.indexOf(t),1)}
+ catch(e){if(e==='stop'){th.length=0;break}th.splice(th.indexOf(t),1);log('⚠ '+(e.message||e))}}}
+function reset(){th.length=0;P.variables=V||{};P.lists=Ls||{};O={};for(const sp of (P.sprites||[])){O[sp.name]={s:sp.shape||'cube',p:(sp.p||[0,0,0]).slice(),r:(sp.r||[0,0,0]).slice(),k:(sp.k||[1,1,1]).slice(),c:hex(sp.color||'#ffffff'),visible:sp.visible!==false}}V=Object.assign({},P.variables||{});Ls=JSON.parse(JSON.stringify(P.lists||{}));for(const k of Object.keys(K))delete K[k];penLast={};if(penCtx)penCtx.clearRect(0,0,pen.width,pen.height);penState.down=false;cam={m:'persp',p:[0,3,8]};li=[-.4,-1,-.6];bg=[.08,.09,.12]}
+function sync(){if(text){P.scripts=parse($('txt').value);saveActiveTarget()}}
+$('run').onclick=()=>{try{sync()}catch(e){return alert(e.message)}reset();refreshProjectPanel();$('log').textContent='';on=true;t0=performance.now();hats(b=>b.op=='when_flag')};
+$('stp').onclick=()=>{on=false;reset()};
+const kn=e=>e.key==' '?'space':e.key.replace('Arrow','').toLowerCase();
+addEventListener('keydown',e=>{if(/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;const k=kn(e);if(!K[k]){K[k]=1;if(on)hats(b=>b.op=='when_key'&&b.a[0]==k)}});
+addEventListener('keyup',e=>delete K[kn(e)]);addEventListener('blur',()=>{for(const k of Object.keys(K))delete K[k]});$('cv').addEventListener('pointerdown',()=>K.mouse=true);addEventListener('pointerup',()=>delete K.mouse);$('cv').addEventListener('pointermove',e=>{const r=$('cv').getBoundingClientRect();V.mouseX=Math.round(e.clientX-r.left-r.width/2);V.mouseY=Math.round(r.height/2-(e.clientY-r.top))});
+
+/* ───────── Текстовый режим (полный round-trip) ─────────
+ Строка = блок: «имя арг арг»; аргументы с пробелами/кавычками/двоеточием — в "JSON-кавычках".
+ Контейнер заканчивается «:», вложенные блоки сдвинуты на 2 пробела. Пустая строка разделяет скрипты. */
+const q=s=>/^[^\s":()]+$/.test(s)?s:JSON.stringify(s);
+const arg=(b,i)=>b.inputs&&b.inputs[i]?'('+[b.inputs[i].op,...b.inputs[i].a.map((_,j)=>arg(b.inputs[i],j))].join(' ')+')':q(b.a[i]);
+const pr=(bl,d,o)=>{for(const b of bl){const c=B[b.op].C;o.push('  '.repeat(d)+[b.op,...b.a.map((_,i)=>arg(b,i))].join(' ')+(c?':':''));if(c){pr(b.sub,d+1,o);if(b.op==='if_else'){o.push('  '.repeat(d)+'else:');pr(b.elseSub||[],d+1,o)}}}return o};
+const toText=sc=>sc.map(s=>pr(s,0,[]).join('\n')).join('\n\n');
+function pargs(s){let i=0;const out=[],ws=()=>{while(s[i]==' ')i++};
+ function item(){ws();if(s[i]=='"'){const m=/^"(?:[^"\\]|\\.)*"/.exec(s.slice(i));if(!m)throw Error('незакрытая кавычка');i+=m[0].length;return JSON.parse(m[0])}
+  if(s[i]=='('){i++;const xs=[];for(;;){ws();if(i>=s.length)throw Error('нет закрывающей «)»');if(s[i]==')'){i++;break}xs.push(item())}
+   const op=xs.shift();if(!B[op]||!B[op].R)throw Error('в скобках нужен блок-значение, а не «'+op+'»');return{op,xs}}
+  const m=/^[^\s"()]+/.exec(s.slice(i));if(!m)throw Error('неожиданный символ «'+s[i]+'»');i+=m[0].length;return m[0]}
+ for(ws();i<s.length;ws())out.push(item());return out}
+function fill(op,xs){const b=blk(op);xs.forEach((x,i)=>{if(x===undefined||i>=b.a.length)return;if(typeof x=='object')b.inputs[i]=fill(x.op,x.xs);else b.a[i]=x});return b}
+function parse(t){const out=[];let st=null;
+ t.split('\n').forEach((raw,n)=>{if(!raw.trim()){st=null;return}
+  try{let ln=raw.trimEnd();const ind=(ln.match(/^ */)[0].length/2)|0,c=ln.endsWith(':');if(c)ln=ln.slice(0,-1);
+   const tk=pargs(ln.trim()),op=tk.shift(),d=B[op];
+   if(op=='else'){const pb=st&&st[ind]&&st[ind].at(-1);if(!c||!pb||pb.op!='if_else')throw Error('else без if_else');st.length=ind+1;st[ind+1]=pb.elseSub;return}if(!d)throw Error('неизвестный блок «'+op+'»');if(!!d.C!==c)throw Error(d.C?'у контейнера нужно «:» в конце':'«:» только у контейнеров');
+   if(!st){if(ind)throw Error('лишний отступ');st=[[]];out.push(st[0])}
+   if(!st[ind])throw Error('неверный отступ');
+   const b=fill(op,tk);st[ind].push(b);st.length=ind+1;if(c)st[ind+1]=b.sub}
+  catch(e){throw Error('Строка '+(n+1)+': '+e.message)}});
+ return out}
+
+/* ───────── Редактор блоков ───────── */
+let P={format:'scratch3d',version:8,scripts:[],sprites:[],variables:{},lists:{},targets:[]},drag=null,text=false,activeTarget='stage';
+const has=(b,arr)=>b.sub&&(b.sub===arr||b.sub.some(x=>has(x,arr)));
+function stackEl(arr,cls){const s=document.createElement('div');s.className=cls||'stack';arr.forEach(b=>s.append(blockEl(b,arr)));
+ s.ondragover=e=>{if(drag){e.preventDefault();e.stopPropagation()}};
+ s.ondrop=e=>{e.preventDefault();e.stopPropagation();if(!drag)return;if(drag.b&&B[drag.b.op].R){drag=null;return}let i=0;
+  for(const k of s.children){const r=k.getBoundingClientRect();if(e.clientY>r.top+r.height/2)i++}
+  let b;if(drag.b){b=drag.b;if(has(b,arr)){drag=null;return}const j=drag.arr.indexOf(b);drag.arr.splice(j,1);if(drag.arr===arr&&j<i)i--}else b=blk(drag.op);
+  arr.splice(i,0,b);drag=null;render()};
+ return s}
+const hasIn=(x,t)=>x===t||Object.values(x.inputs||{}).some(y=>hasIn(y,t));
+function blockEl(b,arr,from){const d=B[b.op],e=document.createElement('div'),h=document.createElement('div');
+ e.__block=b;e.__arr=arr;e.dataset.op=b.op;e.className='blk'+(d.C?' C':'')+(d.H?' H':'')+(d.R?' R':'');e.style.setProperty('--c',CAT[d.c][1]);e.draggable=true;h.className='hd';
+ d.t.split(/(\{\d+\})/).forEach(p=>{const m=p.match(/^\{(\d+)\}$/);if(!m){if(p)h.append(p);return}const i=+m[1];let el;const inner=b.inputs&&b.inputs[i];
+  if(inner){el=document.createElement('span');el.className='socket';el.append(blockEl(inner,null,{p:b,i}))}
+  else if(d.s&&d.s[i]){el=document.createElement('select');d.s[i].forEach(o=>el.add(new Option(o)));el.value=b.a[i]}
+  else{el=document.createElement('input');el.value=b.a[i]}
+  if(!inner&&el.tagName){el.oninput=el.onchange=()=>b.a[i]=el.value;el.draggable=false;el.onpointerdown=ev=>ev.stopPropagation()}
+  if(!(d.r&&d.r.includes(i))&&!(d.s&&d.s[i])){el.ondragover=ev=>{if(drag&&drag.b&&B[drag.b.op].R){ev.preventDefault();ev.stopPropagation();el.classList.add('over')}};el.ondragleave=()=>el.classList.remove('over');
+   el.ondrop=ev=>{ev.preventDefault();ev.stopPropagation();el.classList.remove('over');if(!drag||!drag.b||!B[drag.b.op].R)return;const nb=drag.b;if(hasIn(nb,b)){drag=null;return}
+    if(drag.from)delete drag.from.p.inputs[drag.from.i];else if(drag.arr){const ix=drag.arr.indexOf(nb);if(ix>=0)drag.arr.splice(ix,1)}b.inputs??={};b.inputs[i]=nb;drag=null;render()}}
+  h.append(el)});
+ e.append(h);if(d.C){const sub=stackEl(b.sub||(b.sub=[]));e.append(sub);if(b.op==='if_else'){const label=document.createElement('div');label.className='else-label';label.textContent='иначе';e.append(label);e.append(stackEl(b.elseSub||(b.elseSub=[])))}}
+ e.ondragstart=ev=>{if(ev.target.matches('input,select')){ev.preventDefault();return}ev.stopPropagation();drag={b,arr,from};ev.dataTransfer.setData('text','b')};return e}
+function saveActiveTarget(){P.targets??=[];if(activeTarget==='stage'){let t=P.targets.find(x=>x.name==='stage');if(!t){t={name:'stage',scripts:[],positions:[]};P.targets.unshift(t)}t.scripts=P.scripts;t.positions=P.positions||[];}else{const sp=(P.sprites||[]).find(x=>x.name===activeTarget);if(sp){sp.scripts=P.scripts;sp.positions=P.positions||[];}}}
+function selectTarget(name){saveActiveTarget();activeTarget=name;if(name==='stage'){const t=(P.targets||[]).find(x=>x.name==='stage');P.scripts=t?.scripts||[];P.positions=t?.positions||[];}else{const sp=(P.sprites||[]).find(x=>x.name===name);P.scripts=sp?.scripts||[];P.positions=sp?.positions||[];}if(text){$('txt').value=toText(P.scripts);paintCode()}render();refreshProjectPanel()}
+function ensurePositions(){P.positions??=[];P.scripts.forEach((_,i)=>{P.positions[i]??={x:24+(i%3)*300,y:24+Math.floor(i/3)*210}})}
+function render(){P.scripts=P.scripts.filter(s=>s.length);ensurePositions();saveActiveTarget();const ws=$('ws');ws.innerHTML='';P.scripts.forEach((sc,i)=>{const wrap=document.createElement('div');wrap.className='script';wrap.style.left=P.positions[i].x+'px';wrap.style.top=P.positions[i].y+'px';const grip=document.createElement('div');grip.className='script-grip';grip.textContent=(activeTarget==='stage'?'Сцена':'Спрайт: '+activeTarget)+' · Скрипт '+(i+1);grip.onpointerdown=e=>{if(e.button!==0)return;e.preventDefault();const sx=e.clientX,sy=e.clientY,ox=P.positions[i].x,oy=P.positions[i].y;grip.setPointerCapture(e.pointerId);grip.onpointermove=ev=>{P.positions[i].x=Math.max(0,ox+ev.clientX-sx);P.positions[i].y=Math.max(0,oy+ev.clientY-sy);wrap.style.left=P.positions[i].x+'px';wrap.style.top=P.positions[i].y+'px'};grip.onpointerup=grip.onpointercancel=()=>{grip.onpointermove=null}};wrap.append(grip);wrap.append(stackEl(sc,'script-stack'));ws.append(wrap)})}
+let activeCategory='ev';
+function palette(){const p=$('pal');p.innerHTML='';const nav=document.createElement('div');nav.id='catnav';const blocks=document.createElement('div');blocks.id='catblocks';p.append(nav,blocks);
+ function showCategory(c){activeCategory=c;nav.querySelectorAll('button').forEach(b=>b.classList.toggle('active',b.dataset.cat===c));blocks.innerHTML='';Object.values(B).filter(d=>d.c===c).forEach(d=>{const e=blockEl(blk(d.op),[]);e.ondragstart=ev=>{drag=d.R?{op:d.op,b:blk(d.op),arr:null}:{op:d.op};ev.dataTransfer.setData('text','n')};blocks.append(e)})}
+ for(const c in CAT){const b=document.createElement('button');b.dataset.cat=c;b.textContent=CAT[c][0];b.title=CAT[c][0];b.style.borderLeft='5px solid '+CAT[c][1];b.onclick=()=>showCategory(c);nav.append(b)}
+ showCategory(activeCategory)}
+$('ws').ondragover=e=>{if(drag)e.preventDefault()};
+$('ws').ondrop=e=>{e.preventDefault();if(!drag)return;let b;if(drag.b){b=drag.b;if(drag.from)delete drag.from.p.inputs[drag.from.i];else if(drag.arr)drag.arr.splice(drag.arr.indexOf(b),1)}else b=blk(drag.op);const r=$('ws').getBoundingClientRect();P.scripts.push([b]);P.positions??=[];P.positions.push({x:Math.max(0,e.clientX-r.left+$('ws').scrollLeft),y:Math.max(0,e.clientY-r.top+$('ws').scrollTop)});drag=null;render()};
+$('pal').ondragover=e=>{if(drag&&drag.b)e.preventDefault()};   // перетащить блок в палитру = удалить
+$('pal').ondrop=e=>{e.preventDefault();if(drag&&drag.b){if(drag.from)delete drag.from.p.inputs[drag.from.i];else if(drag.arr)drag.arr.splice(drag.arr.indexOf(drag.b),1);drag=null;render()}};
+document.ondragend=()=>drag=null;
+$('mode').onclick=()=>{if(!text){saveActiveTarget();$('txt').value=toText(P.scripts)}else{try{const parsed=parse($('txt').value);P.scripts=parsed;saveActiveTarget();render()}catch(e){alert('Не удалось преобразовать текст в блоки. Текст сохранён без изменений.\n'+e.message);return}}
+ text=!text;$('ws').hidden=text;$('codebox').hidden=!text;$('mode').textContent=text?'⇄ Блоки':'⇄ Текст';if(text){paintCode();$('txt').focus()}else{refreshProjectPanel()}};
+
+
+/* ───────── Данные проекта и спрайты ───────── */
+const tools=document.createElement('div');tools.id='tools';tools.innerHTML='<button id="newvar">＋ Переменная</button><button id="newlist">＋ Список</button><button id="newsprite">＋ Спрайт</button>';$('pal').prepend(tools);
+const pdata=document.createElement('div');pdata.id='project-data';$('pal').append(pdata);
+$('sprite-pane').append(tools,pdata);
+function refreshProjectPanel(){
+ pdata.innerHTML='';
+ const sh=document.createElement('div');sh.className='panel-title';sh.textContent='Выбери цель, чтобы редактировать её скрипты';pdata.append(sh);
+ const sprites=document.createElement('div');sprites.className='data-list';pdata.append(sprites);
+ const stageRow=document.createElement('div');stageRow.className='data-item sprite-item'+(activeTarget==='stage'?' active':'');stageRow.textContent='🎬 Сцена · Скрипты сцены';stageRow.onclick=()=>selectTarget('stage');sprites.append(stageRow);
+ (P.sprites||[]).forEach((sp,i)=>{const row=document.createElement('div');row.className='data-item sprite-item'+(activeTarget===sp.name?' active':'');row.onclick=()=>selectTarget(sp.name);const icon=document.createElement('span');icon.textContent=sp.shape==='sphere'?'●':sp.shape==='plane'?'▱':sp.shape==='capsule'?'⬭':'■';const name=document.createElement('span');name.textContent=sp.name;name.style.flex='1';const del=document.createElement('button');del.textContent='×';del.title='Удалить спрайт';del.onclick=()=>{if(confirm('Удалить спрайт '+sp.name+'?')){P.sprites.splice(i,1);delete O[sp.name];if(activeTarget===sp.name)selectTarget('stage');else refreshProjectPanel()}};row.append(icon,name,del);sprites.append(row)});
+ const add=document.createElement('div');add.className='data-row';const nm=document.createElement('input');nm.placeholder='имя спрайта';nm.value='sprite'+((P.sprites||[]).length+1);const shape=document.createElement('select');['cube','sphere','capsule','plane'].forEach(x=>shape.add(new Option(x,x)));const btn=document.createElement('button');btn.textContent='＋';btn.onclick=()=>{let name=nm.value.trim();if(!name)return;if(P.sprites.some(x=>x.name===name)||['__proto__','constructor'].includes(name))return alert('Такое имя уже занято');P.sprites.push({name,shape:shape.value,color:'#6aa9ff',p:[0,0,0],r:[0,0,0],k:[1,1,1],visible:true,scripts:[],positions:[]});O[name]={s:shape.value,p:[0,0,0],r:[0,0,0],k:[1,1,1],c:hex('#6aa9ff'),visible:true};selectTarget(name)};add.append(nm,shape,btn);pdata.append(add);
+ const vh=document.createElement('div');vh.className='panel-title';vh.textContent='Переменные';pdata.append(vh);
+ const vars=document.createElement('div');vars.className='data-list';pdata.append(vars);
+ Object.keys(V||{}).filter(k=>!['mouseX','mouseY','answer','volume'].includes(k)).forEach(k=>{const row=document.createElement('div');row.className='data-item';const label=document.createElement('span');label.textContent=k;label.style.flex='1';const val=document.createElement('input');val.value=V[k];val.onchange=()=>{V[k]=ev(val.value);P.variables=V};row.append(label,val);vars.append(row)});
+ const lh=document.createElement('div');lh.className='panel-title';lh.textContent='Списки';pdata.append(lh);
+ const lists=document.createElement('div');lists.className='data-list';pdata.append(lists);
+ Object.keys(Ls||{}).forEach(k=>{const row=document.createElement('div');row.className='data-item';const label=document.createElement('span');label.textContent=k+' ['+(Ls[k]||[]).length+']';label.style.flex='1';const view=document.createElement('button');view.textContent='…';view.title='Содержимое списка';view.onclick=()=>alert(k+':\\n'+(Ls[k]||[]).map((v,i)=>(i+1)+'. '+v).join('\\n'));row.append(label,view);lists.append(row)});
+}
+$('newvar').onclick=()=>{const n=prompt('Имя переменной:','X');if(n){if(Object.prototype.hasOwnProperty.call(V,n))return alert('Такая переменная уже существует');V[n]=0;P.variables=V;refreshProjectPanel();}};
+$('newlist').onclick=()=>{const n=prompt('Имя списка:','мой список');if(n){if(Object.prototype.hasOwnProperty.call(Ls,n))return alert('Такой список уже существует');Ls[n]=[];P.lists=Ls;refreshProjectPanel();}};
+$('newsprite').onclick=()=>{const name='sprite'+((P.sprites||[]).length+1);P.sprites??=[];P.sprites.push({name,shape:'cube',color:'#6aa9ff',p:[0,0,0],r:[0,0,0],k:[1,1,1],visible:true,scripts:[],positions:[]});O[name]={s:'cube',p:[0,0,0],r:[0,0,0],k:[1,1,1],c:hex('#6aa9ff'),visible:true};selectTarget(name)};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function paintCode(){
+ const t=$('txt').value;
+ const re=/"(?:\\.|[^"\\])*"|\/\/[^\n]*|\b\d+(?:\.\d+)?\b|[A-Za-z_][A-Za-z0-9_]*/g;
+ let out='',last=0,m;
+ while((m=re.exec(t))){
+  out+=esc(t.slice(last,m.index));
+  const token=m[0];let cls='';
+  if(token.startsWith('"'))cls='str';
+  else if(token.startsWith('//'))cls='com';
+  else if(/^\d/.test(token))cls='num';
+  else if(B[token])cls='kw';
+  else if(['true','false','and','or','not'].includes(token))cls='opword';
+  out+=cls?'<span class="'+cls+'">'+esc(token)+'</span>':esc(token);
+  last=re.lastIndex;
+ }
+ out+=esc(t.slice(last));
+ $('highlight').innerHTML=out||'&#8203;';
+ $('highlight').scrollTop=$('txt').scrollTop;$('highlight').scrollLeft=$('txt').scrollLeft;
+}
+const hintNames=Object.keys(B);
+$('txt').addEventListener('input',()=>{paintCode();showHints()});
+$('txt').addEventListener('scroll',()=>{ $('highlight').scrollTop=$('txt').scrollTop;$('highlight').scrollLeft=$('txt').scrollLeft });
+$('txt').addEventListener('keydown',e=>{if(e.key=='Tab'){e.preventDefault();const a=e.target.selectionStart,b=e.target.selectionEnd;e.target.setRangeText('  ',a,b,'end');paintCode()}if(e.key=='Escape')$('hints').hidden=true});
+function showHints(){const t=$('txt'),part=t.value.slice(0,t.selectionStart).split(/[\s\n]+/).pop();const hits=hintNames.filter(k=>k.startsWith(part)&&part.length>0).slice(0,8);const h=$('hints');h.innerHTML='';hits.forEach(k=>{const b=document.createElement('button');b.textContent=k+' — '+B[k].t;b.onclick=()=>{const a=t.selectionStart-part.length;t.setRangeText(k,a,t.selectionStart,'end');h.hidden=true;t.focus();paintCode()};h.append(b)});h.hidden=!hits.length}
+let ctxTarget=null;const menu=document.createElement('div');menu.id='context';menu.hidden=true;document.body.append(menu);
+function closeMenu(){menu.hidden=true}
+function menuItem(label,fn){const b=document.createElement('button');b.textContent=label;b.onclick=()=>{fn();closeMenu()};menu.append(b)}
+document.addEventListener('click',closeMenu);
+document.addEventListener('contextmenu',e=>{const block=e.target.closest('.blk'),workspace=e.target.closest('#ws');if(!block&&!workspace)return;e.preventDefault();menu.innerHTML='';ctxTarget=block;
+ if(block&&block.closest('#pal')){menuItem('Добавить в рабочую область',()=>{P.scripts.push([blk(block.dataset.op)]);render()})}
+ else if(block){menuItem('Дублировать блок',()=>{const x=findBlock(block);if(x)x.arr.splice(x.arr.indexOf(x.block)+1,0,JSON.parse(JSON.stringify(x.block)));render()});menuItem('Удалить блок',()=>{const x=findBlock(block);if(x)x.arr.splice(x.arr.indexOf(x.block),1);render()});menuItem('Свернуть / развернуть',()=>{const st=block.querySelector('.stack');if(st)st.hidden=!st.hidden})}
+ else menuItem('Добавить скрипт',()=>{P.scripts.push([blk('when_flag')]);P.positions??=[];P.positions.push({x:24+(P.scripts.length%3)*300,y:24+Math.floor(P.scripts.length/3)*210});render()});
+ menuItem('Очистить рабочую область',()=>{if(confirm('Удалить все скрипты?')){P.scripts=[];render()}});menu.style.left=Math.min(e.clientX,innerWidth-190)+'px';menu.style.top=Math.min(e.clientY,innerHeight-180)+'px';menu.hidden=false});
+function findBlock(el){return el.__block?{arr:el.__arr,block:el.__block}:null}
+
+$('addscript').onclick=()=>{P.scripts.push([blk('when_flag')]);P.positions??=[];P.positions.push({x:24+P.scripts.length%3*300,y:24+Math.floor(P.scripts.length/3)*210});render()};
+/* ───────── Проект: экспорт / импорт ───────── */
+const dl=(n,s,m)=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([s],{type:m||'application/json'}));a.download=n;a.click()};
+const dump=()=>{sync();saveActiveTarget();return JSON.stringify({...P,format:'scratch3d',version:8,scripts:P.scripts,positions:P.positions||[],sprites:P.sprites||[],variables:V||{},lists:Ls||{},targets:allTargets()},null,1)};
+$('ex').onclick=()=>{try{dl('project.scratch3d.json',dump())}catch(e){alert(e.message)}};
+$('im').onclick=()=>$('fi').click();
+$('fi').onchange=async e=>{try{const file=e.target.files[0];if(!file)return;let raw=await file.text(),j;
+ if(/\.html?$/i.test(file.name)||/<html[\s>]/i.test(raw)){const m=raw.match(/<script\b[^>]*id=[\"']proj[\"'][^>]*>([\s\S]*?)<\/script>/i);if(!m)throw Error('В HTML не найден встроенный проект Scratch3D (script#proj)');j=JSON.parse(m[1].trim())}
+ else j=JSON.parse(raw);
+ if(j.format!=='scratch3d'||!Array.isArray(j.scripts))throw Error('Это не проект Scratch3D и не экспортированная игра Scratch3D');
+ j.scripts.forEach(s=>(function chk(bl){if(!Array.isArray(bl))throw Error('Повреждена структура скрипта');bl.forEach(b=>{if(!B[b.op])throw Error('Неизвестный блок: '+b.op);if(b.sub)chk(b.sub);if(b.elseSub)chk(b.elseSub);if(b.inputs)Object.values(b.inputs).forEach(x=>chk([x]))})})(s));
+ P={...j,version:8,positions:j.positions||[],sprites:j.sprites||[],variables:j.variables||{},lists:j.lists||{}};P.targets??=[];for(const sp of P.sprites){sp.scripts??=[];sp.positions??=[];}if(!P.targets.some(t=>t.name==='stage'))P.targets.unshift({name:'stage',scripts:P.scripts,positions:P.positions});for(const sp of P.sprites){const t=P.targets.find(t=>t.name===sp.name);if(t){sp.scripts=t.scripts||sp.scripts;sp.positions=t.positions||sp.positions;}}activeTarget='stage';const stageTarget=P.targets.find(t=>t.name==='stage');P.scripts=stageTarget.scripts||P.scripts;P.positions=stageTarget.positions||P.positions;V=P.variables;Ls=P.lists;render();refreshProjectPanel();if(text)$('txt').value=toText(P.scripts);alert('Проект успешно загружен'+(/\.html?$/i.test(file.name)?' из HTML-игры.':' .'))}catch(x){alert('Ошибка импорта: '+x.message)}e.target.value=''};
+$('exh').onclick=()=>{try{const data=dump().replace(/</g,'\\u003c');const html=document.documentElement.outerHTML.replace('<script id="proj" type="application/json"><\/script>','<script id="proj" type="application/json">'+data+'<\/script>').replace('<body','<body class="play"');dl('game.html','<!doctype html>\n'+html,'text/html')}catch(e){alert('Не удалось экспортировать игру: '+e.message)}};
+
+/* ───────── 3D (чистый WebGL) ───────── */
+const gl=$('cv').getContext('webgl');
+pen=$('pen');penCtx=pen.getContext('2d');function resizePen(){pen.width=pen.clientWidth||1;pen.height=pen.clientHeight||1}addEventListener('resize',resizePen);resizePen();
+const mul=(a,b)=>{const r=[];for(let i=0;i<4;i++)for(let j=0;j<4;j++){let s=0;for(let k=0;k<4;k++)s+=a[k*4+j]*b[i*4+k];r[i*4+j]=s}return r};
+const per=(f,a)=>{const t=1/Math.tan(f/2),n=.1,F=100;return[t/a,0,0,0,0,t,0,0,0,0,(F+n)/(n-F),-1,0,0,2*F*n/(n-F),0]};
+const ort=(s,a)=>[1/(s*a),0,0,0,0,1/s,0,0,0,0,-2/99.9,0,0,0,-100.1/99.9,1];
+const nz=v=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l)};
+const look=e=>{const z=nz(e),x=nz([z[2]+1e-6,0,-z[0]]),y=[z[1]*x[2]-z[2]*x[1],z[2]*x[0]-z[0]*x[2],z[0]*x[1]-z[1]*x[0]],d=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+ return[x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-d(x,e),-d(y,e),-d(z,e),1]};
+const rx=a=>{const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0,0,c,s,0,0,-s,c,0,0,0,0,1]};
+const ry=a=>{const c=Math.cos(a),s=Math.sin(a);return[c,0,-s,0,0,1,0,0,s,0,c,0,0,0,0,1]};
+const rz=a=>{const c=Math.cos(a),s=Math.sin(a);return[c,s,0,0,-s,c,0,0,0,0,1,0,0,0,0,1]};
+const mk=(v,i)=>{const vb=gl.createBuffer(),ib=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,vb);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(v),gl.STATIC_DRAW);
+ gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,ib);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,new Uint16Array(i),gl.STATIC_DRAW);return{vb,ib,n:i.length}};
+const sph=h=>{const v=[],i=[],N=16,M=24;for(let a=0;a<=N;a++){const t=a*Math.PI/N,y=Math.cos(t),r=Math.sin(t);
+ for(let b=0;b<=M;b++){const p=b*2*Math.PI/M,x=r*Math.cos(p),z=r*Math.sin(p);v.push(x*.5,y*.5+(a<N/2?h:-h),z*.5,x,y,z)}}
+ for(let a=0;a<N;a++)for(let b=0;b<M;b++){const p=a*(M+1)+b,s=p+M+1;i.push(p,s,p+1,p+1,s,s+1)}return mk(v,i)};
+const cube=()=>{const v=[],i=[];for(let a=0;a<3;a++)for(const s of[1,-1]){const n=[0,0,0],u=[0,0,0],w=[0,0,0],b=v.length/6;n[a]=s;u[(a+1)%3]=1;w[(a+2)%3]=1;
+ for(const[x,y]of[[-1,-1],[1,-1],[1,1],[-1,1]]){for(let k=0;k<3;k++)v.push(.5*(n[k]+x*u[k]+y*w[k]));v.push(...n)}i.push(b,b+1,b+2,b,b+2,b+3)}return mk(v,i)};
+const G={cube:cube(),sphere:sph(0),capsule:sph(.5),plane:mk([-.5,0,-.5,0,1,0,.5,0,-.5,0,1,0,.5,0,.5,0,1,0,-.5,0,.5,0,1,0],[0,1,2,0,2,3])};
+const sh=(t,s)=>{const o=gl.createShader(t);gl.shaderSource(o,s);gl.compileShader(o);return o};
+const pg=gl.createProgram();
+gl.attachShader(pg,sh(gl.VERTEX_SHADER,'attribute vec3 p,n;uniform mat4 M,VP;varying vec3 N;void main(){N=(M*vec4(n,0.)).xyz;gl_Position=VP*M*vec4(p,1.);}'));
+gl.attachShader(pg,sh(gl.FRAGMENT_SHADER,'precision mediump float;varying vec3 N;uniform vec3 C,L;void main(){float d=max(dot(normalize(N),-normalize(L)),0.);gl_FragColor=vec4(C*(.25+.75*d),1.);}'));
+gl.linkProgram(pg);gl.useProgram(pg);gl.enable(gl.DEPTH_TEST);
+const U={};['M','VP','C','L'].forEach(k=>U[k]=gl.getUniformLocation(pg,k));
+const ap=gl.getAttribLocation(pg,'p'),an=gl.getAttribLocation(pg,'n');gl.enableVertexAttribArray(ap);gl.enableVertexAttribArray(an);
+function penStamp(name){const o=ob(name);const x=pen.width/2+o.p[0]*35,y=pen.height/2-o.p[1]*35;penCtx.fillStyle=penState.color;penCtx.globalAlpha=penState.alpha;penCtx.beginPath();penCtx.arc(x,y,Math.max(2,Math.abs(o.k[0])*8),0,Math.PI*2);penCtx.fill();penCtx.globalAlpha=1}
+function updatePen(){if(!penCtx||!penState.down||!O[penState.obj])return;const o=O[penState.obj],x=pen.width/2+o.p[0]*35,y=pen.height/2-o.p[1]*35,k=penState.obj;if(penLast[k]){penCtx.strokeStyle=penState.color;penCtx.globalAlpha=penState.alpha;penCtx.lineWidth=penState.size;penCtx.lineCap='round';penCtx.beginPath();penCtx.moveTo(...penLast[k]);penCtx.lineTo(x,y);penCtx.stroke();penCtx.globalAlpha=1}penLast[k]=[x,y]}
+function draw(){const cv=$('cv'),w=cv.width=cv.clientWidth,h=cv.height=cv.clientHeight;if(!w||!h)return;
+ gl.viewport(0,0,w,h);gl.clearColor(...bg,1);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);
+ gl.uniformMatrix4fv(U.VP,false,mul(cam.m=='ortho'?ort(4,w/h):per(Math.PI/3,w/h),look(cam.p)));gl.uniform3fv(U.L,li);
+ for(const o of Object.values(O)){if(o.visible===false)continue;const D=Math.PI/180,r=o.r.map(x=>x*D),T=[1,0,0,0,0,1,0,0,0,0,1,0,...o.p,1],S=[o.k[0],0,0,0,0,o.k[1],0,0,0,0,o.k[2],0,0,0,0,1];
+  gl.uniformMatrix4fv(U.M,false,mul(T,mul(rz(r[2]),mul(ry(r[1]),mul(rx(r[0]),S)))));gl.uniform3fv(U.C,o.c);
+  const g=G[o.s];gl.bindBuffer(gl.ARRAY_BUFFER,g.vb);gl.vertexAttribPointer(ap,3,gl.FLOAT,false,24,0);gl.vertexAttribPointer(an,3,gl.FLOAT,false,24,12);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,g.ib);gl.drawElements(gl.TRIANGLES,g.n,gl.UNSIGNED_SHORT,0)}updatePen()}
+
+/* ───────── Запуск ───────── */
+const ifk=(k,sub)=>{const i=blk('if',['true'],sub);i.inputs={0:blk('key_pressed',[k])};return i};
+const demo=()=>[[blk('when_flag'),blk('forever',[],[blk('rotate',['cube',0,1,0]),ifk('left',[blk('move',['cube',-.05,0,0])]),ifk('right',[blk('move',['cube',.05,0,0])])])],
+ [blk('when_key',['space']),blk('say',['Пробел нажат']),blk('beep',[440,120])]];
+const defaultSprites=()=>[
+ {name:'cube',shape:'cube',color:'#ff6a3d',p:[0,0,0],r:[0,0,0],k:[1,1,1],visible:true,scripts:[],positions:[]},
+ {name:'ball',shape:'sphere',color:'#3d9bff',p:[2,0,0],r:[0,0,0],k:[1,1,1],visible:true,scripts:[],positions:[]},
+ {name:'pill',shape:'capsule',color:'#6bd36b',p:[-2,.25,0],r:[0,0,0],k:[1,1,1],visible:true,scripts:[],positions:[]},
+ {name:'floor',shape:'plane',color:'#555a70',p:[0,-.5,0],r:[0,0,0],k:[10,1,10],visible:true,scripts:[],positions:[]}
+];
+reset();palette();refreshProjectPanel();
+const saved=$('proj').textContent.trim();P=saved?JSON.parse(saved):{format:'scratch3d',version:8,scripts:demo(),sprites:defaultSprites(),variables:{},lists:{}};P.version=8;P.sprites??=[];P.variables??={};P.lists??={};P.targets??=[];for(const sp of P.sprites){sp.scripts??=[];sp.positions??=[];sp.p??=[0,0,0];sp.r??=[0,0,0];sp.k??=[1,1,1];sp.visible??=true;}let stageTarget=P.targets.find(t=>t.name==='stage');if(!stageTarget){stageTarget={name:'stage',scripts:P.scripts||[],positions:P.positions||[]};P.targets.unshift(stageTarget);}for(const sp of P.sprites){const t=P.targets.find(t=>t.name===sp.name);if(t){sp.scripts=t.scripts||sp.scripts;sp.positions=t.positions||sp.positions;}}activeTarget='stage';P.scripts=stageTarget.scripts||[];P.positions=stageTarget.positions||[];V=Object.assign({},P.variables);Ls=JSON.parse(JSON.stringify(P.lists));reset();render();refreshProjectPanel();
+(function f(){if(on)tick();draw();requestAnimationFrame(f)})();
+if(document.body.classList.contains('play')){try{$('run').click()}catch(e){log('Ошибка запуска: '+e.message)}}
+</script></body></html>
